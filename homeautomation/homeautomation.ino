@@ -1,18 +1,23 @@
 #include<SPI.h> //Az SPI kommunikációs protokoll használatához szükséges könyvtár
 #include<LiquidCrystal_I2C.h> //Az I2C Folyékony kristályos LCD kijelző kezelő könyvtára
 #include<MFRC522.h> //Az RFID olvasó használatához szükséges könyvtár
+
 #define SS_PIN 9 //Az SS Soros bemeneti port definiálása
 #define RST_PIN 8 //AZ RST vagyis nullázó port definiálása
+
 #include<MQ2.h> //Az MQ2-es szenzor használatához szükséges könyvtár
 #include<dht.h> //A DHT11-es szenzor használatához szükséges könyvtár
 #include<Wire.h> //Wire könyvtár beillesztése az I2C busz használatához
 #include<Servo.h> //A szervomotor vezérléséhez szükséges könyvtár beillesztése
+
 #define DHT11_PIN 47 //A DHT11-es szenzor adat pinjének a definiálása
+
 MFRC522 mfrc522 (SS_PIN, RST_PIN); //Típus definiálás az MFRC522-es RFID olvasónak
 LiquidCrystal_I2C lcd(0x27, 20, 4); //Az általunk használt kijelző karakterkészlete 20 karakter és 4 sor
 Servo kapumotor; //Servo típusú változó mely a kaput nyitó szervomotorra mutat
 Servo garazsmotor; //Servo típusú változó mely a garázst nyitó szervomotorra mutat
 dht DHT; //A dht könyvtárból használt egy objektum
+
 int pir1 = 2; //Az 1-es PIR szenzor pinjét tartalmazó globális integer típusú változó
 int pir2 = 3; //A 2-es PIR szenzor pinjét tartalmazó globális integer típusú változó
 int pir3 = 18; //A 3-as PIR szenzor pinjét tartalmazó globális integer típusú változó
@@ -46,6 +51,7 @@ int dht11 = 47; //globális integer típusú változó mely a DHT11 szenzor pin-
 int p = 0; //globális integer típusú változó mely a szervomotor pozícióját tartalmazza
 boolean card = false; //Boolean típusú változó mely a kártya jelenlétét jelzi
 boolean sotet = true; //Boolean típusú változó mely a sötétséget igazolja vagy cáfolja
+
 void setup()
 {
   pinMode(pir1, INPUT); //Az 1-es PIR szenzor pinjének bemenetté alakítása(Nappali)
@@ -124,24 +130,28 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(pir2), motion2, RISING);//Konyha PIR megszakítás funkció
   attachInterrupt(digitalPinToInterrupt(pir3), motion3, RISING);//Folyosó PIR megszakítás funkció
   attachInterrupt(digitalPinToInterrupt(pir4), motion4, RISING);//Garázs PIR megszakítás funkció
-
 }
+
 void motion1() //ISR funkció mozgás észlelésére a nappaliban
 {
   trigger = 1; //flag változó értékének változtatása
 }
+
 void motion2() //ISR funkció mozgás észlelésére a konyhában
 {
   trigger = 2; //flag változó értékének változtatása
 }
+
 void motion3() //ISR funkció mozgás észlelésére a folyosón
 {
   trigger = 3; //flag változó értékének változtatása
 }
+
 void motion4() //ISR funkció mozgás észlelésére a garázsban
 {
   trigger = 4; //flag változó értékének változtatása
 }
+
 void temperature() //Funkció a hőmérséklet értékének kiíratására
 {
   lcd.clear(); //Az LCD kijelző tartalmának a törlése
@@ -151,6 +161,7 @@ void temperature() //Funkció a hőmérséklet értékének kiíratására
   lcd.print(DHT.temperature); //A hőmérséklet értékének kiíratása
   delay(5000); //Várakozás 5 másodpercig
 }
+
 void humidity() //Funkció a páratartalom értékének a kiíratására
 {
   lcd.clear(); //Az LCD kijelző tartalmának a törlése
@@ -160,6 +171,7 @@ void humidity() //Funkció a páratartalom értékének a kiíratására
   lcd.print(DHT.humidity); //A páratartalom értékének kiíratása
   delay(5000); //Várakozás 5 másodpercig
 }
+
 void checktemp() //Funkció hőmérséklet értékének a kiolvasására a DHT11-ből
 {
   int chk = DHT.read11(DHT11_PIN); //A DHT11 értékének a kiolvasása és segédváltozóban tárolása
@@ -176,6 +188,7 @@ void checktemp() //Funkció hőmérséklet értékének a kiolvasására a DHT11
     digitalWrite(szelloztetesRele, HIGH); //hűtés kikapcsolvva
   }
 }
+
 void fume() //Funkció a gazszivárgás megjelenítésére
 {
   lcd.clear(); //Az LCD kijelző tartalmának a törlése
@@ -184,6 +197,7 @@ void fume() //Funkció a gazszivárgás megjelenítésére
   delay(5000); //Várakozás 5 másodpercig
   trigger = 0; //Flag változó értékének változtatása
 }
+
 void leakage() //Funkció gázszivárgás észlelésére
 {
   lpg = mq2.readLPG(); //Az lpg értékének kiolvasása és változóban tárolása 
@@ -204,6 +218,7 @@ void leakage() //Funkció gázszivárgás észlelésére
     digitalWrite(szelloztetesRele, HIGH); //A szellőztetés kikapcsolva
   }
 }
+
 void beep () //Funkció hangjelzésre
 {
   tone(piezo, 800); //A piezo elem megszólaltatása 800hz-en
@@ -216,6 +231,7 @@ void beep () //Funkció hangjelzésre
   delay(100); //Szüneteltetés 100 milliszekundum ideig
   noTone(piezo); //A piezo elem elhallgattatása
 }
+
 void enter () //Funkció a belépés igazolására
 {
   delay(1000); //Várakozás 1 másodpercig
@@ -229,6 +245,7 @@ void enter () //Funkció a belépés igazolására
   card = true; //A változó értékének igaz-ra változtatása
   trigger = 0; //Flag változó értékének változtatása
 }
+
 void alarmcheck() //Funkció a riasztó állapotának ellenőrzésére
 {
   if (sotet == true) //Feltétel vizsgálat:
@@ -249,6 +266,7 @@ void alarmcheck() //Funkció a riasztó állapotának ellenőrzésére
     delay(2000); //Várakozás 2 másodpercig
   }
 }
+
 void denied() //Funkció az elutasított belépés visszajelzésére
 {
   delay(1000); //Várakozás 1 másodpercig
@@ -259,6 +277,7 @@ void denied() //Funkció az elutasított belépés visszajelzésére
   lcd.print("BELEPES MEGTAGADVA"); //Megadott karakterlánc kiíratása
   card = false; //A változó értékének hamis-ra változtatása
 }
+
 void check() //Funkció a mozgás érzekelésére megszakítás portokon keresztül
 {
   switch (trigger) //Több irányú elágazás a flag változó értékének megfelelően:
@@ -342,6 +361,7 @@ void check() //Funkció a mozgás érzekelésére megszakítás portokon kereszt
       break; //Kilépés az elágazásból
   }
 }
+
 void kapunyitas() //Funkció a kapu nyitására
 {
   Serial.print("Kapunyitas\n"); //Megadott karakterlánc kiíratása a soros portra
@@ -363,6 +383,7 @@ void kapunyitas() //Funkció a kapu nyitására
   lcd.setCursor(0, 1); //Kurzor pozicionálás ez esetben 0. karakter a 1. sorban
   lcd.print("KAPU NYITVA"); //Megadott karakterlánc kiíratása
 }
+
 void kapuzaras() //Funkció a kapu zárására
 {
   Serial.print("Kapuzaras\n"); //Megadott karakterlánc kiíratása a soros portra
@@ -385,6 +406,7 @@ void kapuzaras() //Funkció a kapu zárására
   digitalWrite(garazskapuRele, HIGH); //A garázskapu villogás kikapcsolása
   digitalWrite(kiskapuRele, HIGH); //A kikskapu villogás kikapcsolása
 }
+
 void garazsnyitas() //Funkció a garázs nyitására
 {
   Serial.print("GARAZSNYITAS\n"); //Megadott karakterlánc kiíratása a soros portra
@@ -405,6 +427,7 @@ void garazsnyitas() //Funkció a garázs nyitására
   lcd.setCursor(0, 1); //Kurzor pozicionálás ez esetben 0. karakter a 1. sorban
   lcd.print("GARAZS NYITVA"); //Megadott karakterlánc kiíratása
 }
+
 void garazszaras() //Funkció a garázs zárására
 {
   Serial.print("GARAZSZARAS\n"); //Megadott karakterlánc kiíratása a soros portra
@@ -429,6 +452,7 @@ void garazszaras() //Funkció a garázs zárására
   delay(5000); //Szellőztetés 5 másodpercig
   digitalWrite(garazsRele, HIGH); //Garázs szellőztetés kikapcsolása
 }
+
 void loop() //ciklus
 {
   int chk = DHT.read11(DHT11_PIN); //A DHT11 értékének a kiolvasása és segédváltozóban tárolása
