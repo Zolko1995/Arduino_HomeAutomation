@@ -1,103 +1,103 @@
-#include<SPI.h> //Az SPI kommunikációs protokoll használatához szükséges könyvtár
-#include<LiquidCrystal_I2C.h> //Az I2C Folyékony kristályos LCD kijelző kezelő könyvtára
-#include<MFRC522.h> //Az RFID olvasó használatához szükséges könyvtár
+#include<SPI.h> 
+#include<LiquidCrystal_I2C.h> 
+#include<MFRC522.h> 
 
-#define SS_PIN 9 //Az SS Soros bemeneti port definiálása
-#define RST_PIN 8 //AZ RST vagyis nullázó port definiálása
+#define SS_PIN 9 
+#define RST_PIN 8 
 
-#include<MQ2.h> //Az MQ2-es szenzor használatához szükséges könyvtár
-#include<dht.h> //A DHT11-es szenzor használatához szükséges könyvtár
-#include<Wire.h> //Wire könyvtár beillesztése az I2C busz használatához
-#include<Servo.h> //A szervomotor vezérléséhez szükséges könyvtár beillesztése
+#include<MQ2.h> 
+#include<dht.h> 
+#include<Wire.h> 
+#include<Servo.h> 
 
-#define DHT11_PIN 47 //A DHT11-es szenzor adat pinjének a definiálása
+#define DHT11_PIN 47 
 
-MFRC522 mfrc522 (SS_PIN, RST_PIN); //Típus definiálás az MFRC522-es RFID olvasónak
-LiquidCrystal_I2C lcd(0x27, 20, 4); //Az általunk használt kijelző karakterkészlete 20 karakter és 4 sor
-Servo kapumotor; //Servo típusú változó mely a kaput nyitó szervomotorra mutat
-Servo garazsmotor; //Servo típusú változó mely a garázst nyitó szervomotorra mutat
-dht DHT; //A dht könyvtárból használt egy objektum
+MFRC522 mfrc522 (SS_PIN, RST_PIN);
+LiquidCrystal_I2C lcd(0x27, 20, 4); 
+Servo kapumotor; 
+Servo garazsmotor; 
+dht DHT; 
 
-int pir1 = 2; //Az 1-es PIR szenzor pinjét tartalmazó globális integer típusú változó
-int pir2 = 3; //A 2-es PIR szenzor pinjét tartalmazó globális integer típusú változó
-int pir3 = 18; //A 3-as PIR szenzor pinjét tartalmazó globális integer típusú változó
-int pir4 = 19; //A 4-es PIR szenzor pinjét tartalmazó globális integer típusú változó
-int trigger = 0; //ISR Flag változó a megszakítások ütemezésére
-int nappaliLed = 30; //A nappali világitás 
-int konyhaLed = 28; //A konyhai világítás
-int folyosoLed1 = 24; //A folyosó1 világítás
-int folyosoLed2 = 25; //A folyosó2 világítás
-int garazsLed = 23; //A garázs világítás
-int medence1 = 32; //A medence1 világítás
-int medence2 = 33; //A medence2 világítás
-int kintiRele = 43; //A ház kinti világítását kapcsoló relé
-int keritesRele = 40; //A kerítés világítását kapcsoló relé
-int kiskapuRele = 41; //A kiskapu villogtatását kapcsoló relé
-int garazskapuRele = 42; //A garázskapu villogtatását kapcsoló relé
-int szelloztetesRele = 44; //A ház szellőztetését kapcsoló relé
-int garazsRele = 45; //A garázs szellőztetését kapcsoló relé
-int piezo = 48; //Piezo elem
-int light = 0;//Fényérték meghatározása
-int potmeter = A0; //fenyérték állítása, sötét/világos szimulálása
-int lpg, co, smoke; //globális integer típusú változók az lpg, co, és a fust értékenk a tárolására
-int gas = A2; //Az MQ2-es szenzor pinjének tárolása egy globális integer típusú változóban
-MQ2 mq2(gas); //Az MQ2 szenzor inicializálása és az általa használt bemenet hozzárendelése
-int trigPin = 10; //globális integer típusú változó mely az Ultrahangos szenzor trigger pin-jét tárolja
-int echoPin = 11; //globális integer típusú változó mely az Ultrahangos szenzor trigger pin-jét tárolja
-long duration; //long típusú változó mely az időtartam értékét tárolja 
-int distance; //integer típusú változó mely a távolság értékét tárolja
-int safetyDistance; //integer típusú változó mely a biztonságos távolság értékét tárolja
-int dht11 = 47; //globális integer típusú változó mely a DHT11 szenzor pin-jét tárolja 
-int p = 0; //globális integer típusú változó mely a szervomotor pozícióját tartalmazza
-boolean card = false; //Boolean típusú változó mely a kártya jelenlétét jelzi
-boolean sotet = true; //Boolean típusú változó mely a sötétséget igazolja vagy cáfolja
+int pir1 = 2; 
+int pir2 = 3; 
+int pir3 = 18; 
+int pir4 = 19; 
+int trigger = 0;
+int nappaliLed = 30; 
+int konyhaLed = 28; 
+int folyosoLed1 = 24; 
+int folyosoLed2 = 25; 
+int garazsLed = 23; 
+int medence1 = 32; 
+int medence2 = 33; 
+int kintiRele = 43; 
+int keritesRele = 40; 
+int kiskapuRele = 41; 
+int garazskapuRele = 42; 
+int szelloztetesRele = 44; 
+int garazsRele = 45; 
+int piezo = 48; 
+int light = 0;
+int potmeter = A0; 
+int lpg, co, smoke; 
+int gas = A2; 
+MQ2 mq2(gas); 
+int trigPin = 10; 
+int echoPin = 11; 
+long duration; 
+int distance; 
+int safetyDistance;
+int dht11 = 47; 
+int p = 0; 
+boolean card = false; 
+boolean sotet = true; 
 
 void setup()
 {
-  pinMode(pir1, INPUT); //Az 1-es PIR szenzor pinjének bemenetté alakítása(Nappali)
-  pinMode(pir2, INPUT); //A 2-es PIR szenzor pinjének bemenetté alakítása(Konyha)
-  pinMode(pir3, INPUT); //A 3-as PIR szenzor pinjének bemenetté alakítása(Folyosó)
-  pinMode(pir4, INPUT); //A 4-es PIR szenzor pinjének bemenetté alakítása(Garázs)
-  pinMode(nappaliLed, OUTPUT); //A nappali vilagitasának kimenetté alakítása
-  pinMode(konyhaLed, OUTPUT); //konyha vilagitasának kimenetté alakítása
-  pinMode(folyosoLed1, OUTPUT); //folyoso1 vilagitasának kimenetté alakítása
-  pinMode(folyosoLed2, OUTPUT); //folyoso2 vilagitasának kimenetté alakítása
-  pinMode(garazsLed, OUTPUT); //garazs vilagitasának kimenetté alakítása
-  pinMode(medence1, OUTPUT); //medence1 vilagitasának kimenetté alakítása
-  pinMode(medence2, OUTPUT);  //medence2 vilagitasának kimenetté alakítása
-  pinMode(kintiRele, OUTPUT); //A kinti vilagitás reléjének kimenetté alakítása
-  pinMode(keritesRele, OUTPUT); //A kerítés vilagitás reléjének kimenetté alakítása
-  pinMode(kiskapuRele, OUTPUT); //A kiskapu vilagitás reléjének kimenetté alakítása
-  pinMode(garazskapuRele, OUTPUT); //A garázskapuvilagitás reléjének kimenetté alakítása
-  pinMode(szelloztetesRele, OUTPUT); //A szellőztetés reléjének kimenetté alakítása
-  pinMode(garazsRele, OUTPUT); //A garázs szellőztetés reléjének kimenetté alakítása
-  pinMode(piezo, OUTPUT);//A piezo elemet tartalmazó pin kimenetté alakítása
-  pinMode(gas, INPUT); //Az MQ2-es szenzor által használt pin bemenetté alakítása
-  pinMode(potmeter, INPUT); //A fényérték szimulálására használt potenciométer bemenetté alakítása
-  pinMode(trigPin, OUTPUT); //A szenzor trigger pinje, mint digitális kimenet
-  pinMode(echoPin, INPUT); //A szenzor echo pinje, mint digitális bemenet
-  pinMode(dht11, INPUT); //A szenzor adat pinje, mint digitális bemenet
-  digitalWrite(nappaliLed, LOW); //A nappali világítás kikapcsolt állapotban
-  digitalWrite(konyhaLed, LOW); //A konyhai világítás kikapcsolt állapotban
-  digitalWrite(folyosoLed1, LOW); //A folyosó1 világítás kikapcsolt állapotban
-  digitalWrite(folyosoLed2, LOW); //A folyosó2 világítás kikapcsolt állapotban
-  digitalWrite(garazsLed, LOW); //A garázs világítás kikapcsolt állapotban
-  digitalWrite(medence1, LOW); //A medence1 világítás kikapcsolt állapotban
-  digitalWrite(medence2, LOW); //A medence2 világítás kikapcsolt állapotban
-  digitalWrite(kintiRele, HIGH); //A kinti vilagitas kikapcsolt állapotban (Relé HIGH = OFF)
-  digitalWrite(keritesRele, HIGH); //A kerítés vilagitas kikapcsolt állapotban (Relé HIGH = OFF)
-  digitalWrite(kiskapuRele, HIGH); //A kiskapu villogas kikapcsolt állapotban (Relé HIGH = OFF)
-  digitalWrite(garazskapuRele, HIGH); //A garázskapu villogas kikapcsolt állapotban (Relé HIGH = OFF)
-  digitalWrite(szelloztetesRele, HIGH); //A szellőztetés kikapcsolt állapotban (Relé HIGH = OFF)
-  digitalWrite(garazsRele, HIGH); //A garázs szellőztetés kikapcsolt állapotban (Relé HIGH = OFF)
-  Serial.begin(9600); //A soros porton történő kommunikáció bitrátája
-  mq2.begin(); //Az MQ2-es szenzorral való kommunikáció indítása
-  SPI.begin(); //Az SPI buszon történő kommunikáció indítása
-  mfrc522.PCD_Init(); //Az MFRC522-es RFID olvasó modul inicializálása
-  lcd.init(); //Az LCD kijelző inicializálása
-  lcd.backlight(); //Az LCD kijelző háttérvilágításának bekapcsolása
-  lcd.setCursor(4, 0); //Kurzor pozicionálás ez esetben 4. karakter a 0. sorban
-  lcd.print("UDVOZOLJUK"); //Megadott karakterlánc kiíratása
+  pinMode(pir1, INPUT);
+  pinMode(pir2, INPUT);
+  pinMode(pir3, INPUT); 
+  pinMode(pir4, INPUT); 
+  pinMode(nappaliLed, OUTPUT); 
+  pinMode(konyhaLed, OUTPUT); 
+  pinMode(folyosoLed1, OUTPUT); 
+  pinMode(folyosoLed2, OUTPUT); 
+  pinMode(garazsLed, OUTPUT); 
+  pinMode(medence1, OUTPUT); 
+  pinMode(medence2, OUTPUT);  
+  pinMode(kintiRele, OUTPUT); 
+  pinMode(keritesRele, OUTPUT); 
+  pinMode(kiskapuRele, OUTPUT); 
+  pinMode(garazskapuRele, OUTPUT); 
+  pinMode(szelloztetesRele, OUTPUT); 
+  pinMode(garazsRele, OUTPUT); 
+  pinMode(piezo, OUTPUT);
+  pinMode(gas, INPUT); 
+  pinMode(potmeter, INPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT); 
+  pinMode(dht11, INPUT); 
+  digitalWrite(nappaliLed, LOW);
+  digitalWrite(konyhaLed, LOW); 
+  digitalWrite(folyosoLed1, LOW);
+  digitalWrite(folyosoLed2, LOW);
+  digitalWrite(garazsLed, LOW);
+  digitalWrite(medence1, LOW);
+  digitalWrite(medence2, LOW);
+  digitalWrite(kintiRele, HIGH);
+  digitalWrite(keritesRele, HIGH);
+  digitalWrite(kiskapuRele, HIGH);
+  digitalWrite(garazskapuRele, HIGH);
+  digitalWrite(szelloztetesRele, HIGH);
+  digitalWrite(garazsRele, HIGH); 
+  Serial.begin(9600); 
+  mq2.begin(); 
+  SPI.begin(); 
+  mfrc522.PCD_Init(); 
+  lcd.init(); 
+  lcd.backlight(); 
+  lcd.setCursor(4, 0); 
+  lcd.print("UDVOZOLJUK"); 
   lcd.setCursor(8, 1); //Kurzor pozicionálás ez esetben 8. karakter a 1. sorban
   lcd.print("A"); //Megadott karakterlánc kiíratása
   Serial.print("A rendszer aktív\n"); //Megadott karakterlánc kiíratása a soros portra
